@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "prisma": "3.14.0-dev.10"
+    "prisma": "3.14.0-dev.11"
   }
 }
