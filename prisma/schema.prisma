@@ -1,0 +1,86 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["cockroachdb"]
+}
+
+datasource db {
+  provider = "cockroachdb"
+  url      = "postgresql://jo_l:11ekBxMQuUr07kHv@free-tier.gcp-us-central1.cockroachlabs.cloud:26257/introspection-ci-5134.aragon-notification-service?sslmode=verify-full&connect_timeout=30"
+}
+
+model eventsources {
+  eventsource_id   BigInt          @id
+  created_at       DateTime?       @default(now()) @db.Timestamptz(6)
+  enabled          Boolean         @default(true)
+  contract_address String          @db.String(255)
+  kernel_address   String          @db.String(255)
+  ens_name         String?         @db.String(255)
+  abi              Json?
+  event_name       String          @db.String(255)
+  app_name         String          @db.String(255)
+  network          String          @db.String(255)
+  from_block       BigInt
+  last_poll        DateTime?       @db.Timestamptz(6)
+  subscriptions    subscriptions[]
+
+  @@unique([contract_address, event_name, network], map: "eventsources_contract_address_event_name_network_unique")
+}
+
+model knex_migrations {
+  id             BigInt    @id
+  name           String?   @db.String(255)
+  batch          BigInt?
+  migration_time DateTime? @db.Timestamptz(6)
+}
+
+model notifications {
+  notification_id  BigInt        @id
+  created_at       DateTime?     @default(now()) @db.Timestamptz(6)
+  subscription_id  BigInt
+  return_values    Json?
+  block_time       DateTime      @db.Timestamptz(6)
+  transaction_hash String        @db.String(255)
+  block            BigInt
+  sent             Boolean       @default(false)
+  subscriptions    subscriptions @relation(fields: [subscription_id], references: [subscription_id], onDelete: Cascade, onUpdate: NoAction, map: "notifications_subscription_id_foreign")
+
+  @@index([subscription_id], map: "notifications_subscription_id_index")
+}
+
+model subscriptions {
+  subscription_id BigInt          @id
+  user_id         BigInt
+  eventsource_id  BigInt
+  created_at      DateTime?       @default(now()) @db.Timestamptz(6)
+  join_block      BigInt
+  eventsources    eventsources    @relation(fields: [eventsource_id], references: [eventsource_id], onDelete: NoAction, onUpdate: NoAction, map: "subscriptions_eventsource_id_foreign")
+  users           users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "subscriptions_user_id_foreign")
+  notifications   notifications[]
+
+  @@unique([user_id, eventsource_id], map: "subscriptions_user_id_eventsource_id_unique")
+  @@index([user_id], map: "subscriptions_user_id_index")
+  @@index([eventsource_id], map: "subscriptions_eventsource_id_index")
+}
+
+model tokens {
+  token_id       BigInt    @id
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  user_id        BigInt
+  token_scope    String?   @default("MAGICLINK")
+  valid          Boolean   @default(true)
+  some_new_field String?   @db.String(255)
+  users          users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "tokens_user_id_foreign")
+
+  @@index([user_id], map: "tokens_user_id_index")
+}
+
+model users {
+  user_id       BigInt          @id
+  created_at    DateTime?       @default(now()) @db.Timestamptz(6)
+  email         String          @unique(map: "users_email_unique") @db.String(255)
+  verified      Boolean         @default(false)
+  subscriptions subscriptions[]
+  tokens        tokens[]
+
+  @@index([email], map: "users_email_index")
+}
