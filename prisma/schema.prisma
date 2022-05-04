@@ -58,8 +58,8 @@ model subscriptions {
   notifications   notifications[]
 
   @@unique([user_id, eventsource_id], map: "subscriptions_user_id_eventsource_id_unique")
-  @@index([eventsource_id], map: "subscriptions_eventsource_id_index")
   @@index([user_id], map: "subscriptions_user_id_index")
+  @@index([eventsource_id], map: "subscriptions_eventsource_id_index")
 }
 
 model tokens {
